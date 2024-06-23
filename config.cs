@@ -1,8 +1,10 @@
-namespace DISCORD_BOT_Config
+﻿namespace DISCORD_BOT_Config
+
 {
-    class Config
+    public class Config
     {
         public string Token { get; } = "";
+        public string Prefix { get; } = "/";
 
         public readonly string[] jokes = { "На свете две вещи ненавижу: расизм и негров.",
         "Стоит негр на улице и пьет молоко. Мимо проходит белый, останавливается перед ним, смотрит так пристально и говорит:— Не-е-е, не поможет…",
