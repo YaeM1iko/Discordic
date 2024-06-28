@@ -1,32 +1,39 @@
-﻿using Discord;
+﻿using Discordbot_Config;
+using Discord.Net;
 using Discord.WebSocket;
 using Discord.Interactions;
-using System;
-using System.Threading.Tasks;
-using DISCORD_BOT_Config;
-using Discord.Net;
 using Newtonsoft.Json;
+using Discord;
+using Discordbot_Services;
+using Discordbot_Commands;
+using System.Threading.Tasks;
+using System;
 
-namespace Discord_bot_4
+namespace Discordbot
 {
     class Bot
     {
         private DiscordSocketClient client;
         private readonly Config config = new Config();
-       // private readonly ulong guildId = 
+        private readonly ulong guildId = 125;
         private InteractionService interactionService;
+        private CommandService commandService;
 
         static void Main(string[] args)
             => new Bot().MainAsync().GetAwaiter().GetResult();
+
         private async Task MainAsync()
         {
             DiscordSocketConfig discordConfig = new DiscordSocketConfig
             {
-                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
+                GatewayIntents = GatewayIntents.Guilds |
+                     GatewayIntents.GuildMessages |
+                     GatewayIntents.MessageContent
             };
 
             client = new DiscordSocketClient(discordConfig);
             interactionService = new InteractionService(client);
+            commandService = new CommandService(config);
 
             client.Log += Log;
             client.Ready += Client_Ready;
@@ -49,42 +56,28 @@ namespace Discord_bot_4
         {
             var guild = client.GetGuild(guildId);
 
-            var guildCommand = new SlashCommandBuilder();
-            guildCommand.WithName("hohol")
-                        .WithDescription("Много шуток про негров!");
+            var hoholCommand = new HoholCommand();
             try
             {
-                await guild.CreateApplicationCommandAsync(guildCommand.Build());
+                await guild.CreateApplicationCommandAsync(hoholCommand.BuildCommand().Build());
             }
             catch (HttpException exception)
             {
                 var json = JsonConvert.SerializeObject(exception.Errors, Formatting.Indented);
                 Console.WriteLine(json);
             }
+
             await interactionService.AddModulesAsync(System.Reflection.Assembly.GetExecutingAssembly(), null);
         }
+
         private async Task CommandsHandler(SocketMessage msg)
         {
-            if (!msg.Author.IsBot)
-            {
-                if (msg.Content.Contains("Хохол"))
-                {
-                    Random rnd = new Random();
-                    string[] jokes = config.jokes;
-                    string randomJoke = jokes[rnd.Next(jokes.Length)];
-                    await msg.Channel.SendMessageAsync(randomJoke);
-                }
-            }
+            await commandService.HandleMessageCommand(msg);
         }
+
         private async Task SlashCommandHandler(SocketSlashCommand command)
         {
-            if (command.Data.Name == "hohol")
-            {
-                Random rnd = new Random();
-                string[] jokes = config.jokes;
-                string randomJoke = jokes[rnd.Next(jokes.Length)];
-                await command.RespondAsync(randomJoke);
-            }
+            await commandService.HandleSlashCommand(command);
         }
     }
 }
